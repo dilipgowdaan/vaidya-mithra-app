@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 // --- Firebase SDK Imports (Using standard package imports) ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; // signInWithCustomToken removed as we only use anonymous sign-in now
 import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapshot, serverTimestamp, setLogLevel } from 'firebase/firestore';
 
 
 // --- API Configuration ---
-// This will be read from your Vercel Environment Variables
+// Read securely from Vercel Environment Variables
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
 const apiKey = env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
@@ -127,9 +127,11 @@ const Logo = () => (
 );
 
 /**
- * 3. Navigation Bar (Modified for State-based Navigation)
+ * 3. Navigation Bar (Modified for State-based Navigation and Mobile Menu)
  */
 const NavBar = ({ currentPage, onNavigate }) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    
     const navItems = [
         { id: "home", name: "Home", icon: "home" },
         { id: "prediction", name: "Prediction", icon: "stethoscope" },
@@ -138,13 +140,20 @@ const NavBar = ({ currentPage, onNavigate }) => {
         { id: "contact", name: "Contact", icon: "mail" },
     ];
 
+    const handleNavigation = (id) => {
+        onNavigate(id);
+        setIsMenuOpen(false); // Close menu on navigation
+    };
+
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200/80 flex-shrink-0">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className="no-underline">
+                    <a href="#" onClick={(e) => { e.preventDefault(); handleNavigation('home'); }} className="no-underline">
                         <Logo />
                     </a>
+                    
+                    {/* Desktop Menu */}
                     <div className="hidden md:flex space-x-4">
                         {navItems.map((item) => {
                             const isActive = currentPage === item.id;
@@ -152,7 +161,7 @@ const NavBar = ({ currentPage, onNavigate }) => {
                                 <a
                                     key={item.id}
                                     href="#"
-                                    onClick={(e) => { e.preventDefault(); onNavigate(item.id); }}
+                                    onClick={(e) => { e.preventDefault(); handleNavigation(item.id); }}
                                     className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center transition duration-150 ${
                                         isActive
                                             ? 'bg-blue-100 text-blue-700'
@@ -165,8 +174,46 @@ const NavBar = ({ currentPage, onNavigate }) => {
                             );
                         })}
                     </div>
+                    
+                    {/* Mobile Menu Button */}
+                    <button
+                        className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    >
+                         {isMenuOpen ? (
+                             <Icon name="x" size={24} />
+                         ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                         )}
+                    </button>
                 </div>
             </div>
+
+            {/* Mobile Menu Overlay */}
+            {isMenuOpen && (
+                <div 
+                    className="md:hidden absolute top-16 left-0 w-full bg-white/95 backdrop-blur-lg shadow-lg border-t border-gray-200/80 transform origin-top transition-all duration-300 ease-out"
+                    style={{ maxHeight: 'calc(100vh - 4rem)' }}
+                >
+                    <div className="flex flex-col p-4 space-y-2">
+                        {navItems.map((item) => (
+                            <a
+                                key={item.id}
+                                href="#"
+                                onClick={(e) => { e.preventDefault(); handleNavigation(item.id); }}
+                                className={`px-4 py-3 rounded-lg text-lg font-medium flex items-center transition duration-150 ${
+                                    currentPage === item.id
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'text-gray-800 hover:bg-blue-50'
+                                }`}
+                            >
+                                <Icon name={item.icon} size={20} className="mr-3" color="currentColor" />
+                                {item.name}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };
@@ -210,12 +257,12 @@ const Footer = ({ className = '' }) => (
  * PAGE 1: Home Page (Modified to fill flex-grow)
  */
 const HomePage = ({ onNavigate }) => (
-  <div className="h-full flex flex-col items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-500 overflow-hidden">
+  <div className="h-full flex flex-col items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-500 overflow-hidden p-4 sm:p-8">
     <div className="absolute inset-0 opacity-10 bg-cover bg-center" style={{backgroundImage: "url('https://placehold.co/1920x800/ffffff/000000?text=Health+Data+Analysis')"}}></div>
     
-    <div className="z-10 text-center text-white p-8 max-w-4xl">
+    <div className="z-10 text-center text-white p-4 max-w-4xl">
       <h1 
-        className="text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg tracking-tight opacity-0"
+        className="text-4xl md:text-6xl font-extrabold mb-4 drop-shadow-lg tracking-tight opacity-0"
         style={{ animation: 'fadeInUp 0.6s 0.2s ease-out forwards' }}
       >
         Welcome to Vaidya Mithra
@@ -282,14 +329,14 @@ const HospitalPage = () => {
     // This container centers the card vertically and horizontally
     <div id="hospitals-page" className="h-full flex items-center justify-center p-4 sm:p-8">
       <div 
-        className="bg-white/80 backdrop-blur-lg shadow-2xl rounded-2xl p-8 border border-gray-200/50 transition-all duration-300 hover:shadow-cyan-100 max-w-2xl w-full opacity-0"
+        className="bg-white/80 backdrop-blur-lg shadow-2xl rounded-2xl p-6 sm:p-8 border border-gray-200/50 transition-all duration-300 hover:shadow-cyan-100 max-w-2xl w-full opacity-0"
         style={{ animation: 'fadeInUp 0.5s ease-out forwards' }}
       >
-        <h2 className="text-3xl font-extrabold text-blue-800 mb-6 flex items-center">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-blue-800 mb-6 flex items-center">
           <Icon name="hospital" size={30} className="mr-3 text-blue-500" />
           Nearby Hospitals & Clinics
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-6 text-sm sm:text-base">
           Quickly find the nearest medical facilities. We will use your current location to launch a localized Google Maps search.
         </p>
 
@@ -1087,7 +1134,8 @@ const App = () => {
       const attemptAuth = async () => {
         try {
           if (initialAuthToken) {
-            await signInWithCustomToken(firebaseAuth, initialAuthToken);
+            // Removed signInWithCustomToken as it's not used in Vercel deployment setup
+            // await signInWithCustomToken(firebaseAuth, initialAuthToken);
           } else {
             await signInAnonymously(firebaseAuth);
           }
@@ -1162,7 +1210,7 @@ const App = () => {
         /* Element Fade-in-Up */
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          to { transform: translateY(0); opacity: 1; }
         }
         
         /* Element Fade-in */
