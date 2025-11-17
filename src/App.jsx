@@ -6,8 +6,8 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 
 
 // --- API Configuration ---
-// Read securely from Vercel Environment Variables. We will access environment variables directly.
-const apiKey = process.env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
+// FIXED: Simplified access to standard Vite method (import.meta.env)
+const apiKey = import.meta.env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
 // --- Structured JSON Schema for Disease Prediction ---
@@ -305,9 +305,8 @@ const HospitalPage = () => {
         const lon = position.coords.longitude;
         setStatus('found');
 
-        // MODIFIED: Switched to the cleaner search/center syntax for better mobile compatibility
-        // This searches for "Emergency Room" while setting the map center to the user's location (14z = zoom level)
-        const mapsUrl = `https://www.google.com/maps/search/Emergency+Room/@${lat},${lon},14z`;
+        // MODIFIED: Simplified search query to just "Hospitals" and used coords for centering (optimal for mobile)
+        const mapsUrl = `https://www.google.com/maps/search/Hospitals/@${lat},${lon},14z`;
         
         // Redirect user to Google Maps in a new tab
         window.open(mapsUrl, '_blank');
@@ -875,7 +874,7 @@ const PredictionPage = ({ db, auth, userId, authReady }) => {
                     : 'bg-gray-100 text-gray-700 hover:bg-blue-100'
                 }`}
               >
-                {cat}
+                cat
               </button>
             ))}
           </div>
@@ -1173,10 +1172,8 @@ const App = () => {
         return <div className={pageContainerClasses}><HomePage onNavigate={setCurrentPage} /></div>;
       case 'prediction':
         // PredictionPage is the only one that scrolls
-        // MODIFIED: Pass appId prop
         return <div className={pageContainerClasses + " overflow-y-auto"}><PredictionPage db={db} auth={auth} userId={userId} authReady={authReady} /></div>;
       case 'docbot':
-        // MODIFIED: Pass appId prop
         return <div className={pageContainerClasses}><DocBotPage db={db} auth={auth} userId={userId} authReady={authReady} /></div>;
       case 'hospitals':
         return <div className={pageContainerClasses}><HospitalPage /></div>;
