@@ -6,8 +6,8 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 
 
 // --- API Configuration ---
-// FIXED: Simplified access to standard Vite method (import.meta.env)
-const apiKey = import.meta.env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
+// Read securely from Vercel Environment Variables. We will access environment variables directly.
+const apiKey = process.env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
 // --- Structured JSON Schema for Disease Prediction ---
@@ -435,8 +435,10 @@ const DocBotPage = ({ db, userId, auth, authReady }) => {
   }, []);
 
   const handleSend = async (messageText) => {
+    if (!db || !userId || !auth?.app?.options?.appId) return;
+
     const message = (typeof messageText === 'string') ? messageText : currentMessage;
-    if (!message.trim() || isTyping || !db || !userId || !auth?.app?.options?.appId) return;
+    if (!message.trim() || isTyping || !authReady) return;
 
     const userMessage = message.trim();
     setCurrentMessage('');
@@ -874,7 +876,7 @@ const PredictionPage = ({ db, auth, userId, authReady }) => {
                     : 'bg-gray-100 text-gray-700 hover:bg-blue-100'
                 }`}
               >
-                cat
+                {cat} {/* FIXED: Was showing literal "cat" */ }
               </button>
             ))}
           </div>
@@ -1081,7 +1083,6 @@ const App = () => {
     try {
       // --- MODIFICATION FOR VERCEL ---
       // 1. Read the config from Vercel's Environment Variables
-      // We will access environment variables directly via `process.env` (Node environment standard)
       const firebaseConfigStr = process.env.VITE_FIREBASE_CONFIG || '{}';
       
       // 2. We are on a public website, so we MUST sign in anonymously.
