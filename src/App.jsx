@@ -7,7 +7,7 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 
 // --- API Configuration ---
 // This will be read from your Vercel Environment Variables
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+const apiKey = "AIzaSyAwam5PeQ1-mNyyaznBIx0jh3FNWL5IGCU";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
 // --- Structured JSON Schema for Disease Prediction ---
