@@ -7,7 +7,8 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 
 // --- API Configuration ---
 // This will be read from your Vercel Environment Variables
-const apiKey = (import.meta && import.meta.env) ? import.meta.env.VITE_VAIDYA_MITHRA_GEMINI_KEY : ""; // <-- THIS LINE IS UPDATED
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+const apiKey = env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
 // --- Structured JSON Schema for Disease Prediction ---
@@ -1043,8 +1044,8 @@ const App = () => {
     try {
       // --- MODIFICATION FOR VERCEL ---
       // 1. Read the config from Vercel's Environment Variables
-      //    Vite exposes this as `import.meta.env.VITE_FIREBASE_CONFIG`
-      const firebaseConfigStr = (import.meta && import.meta.env) ? import.meta.env.VITE_FIREBASE_CONFIG : '{}'; // <-- THIS LINE IS UPDATED
+      const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+      const firebaseConfigStr = env.VITE_FIREBASE_CONFIG || '{}';
       
       // 2. We are on a public website, so we MUST sign in anonymously.
       const initialAuthToken = null; 
@@ -1125,7 +1126,7 @@ const App = () => {
   }, []);
 
   // Page Rendering Logic
-  const renderPage = ().
+  const renderPage = () => {
     // This is where the animation class is applied
     const pageContainerClasses = "h-full w-full"; // Page components handle their own animation now
 
