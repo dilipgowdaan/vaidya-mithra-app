@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 // --- Firebase SDK Imports (Using standard package imports) ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; // signInWithCustomToken removed as we only use anonymous sign-in now
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; 
 import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapshot, serverTimestamp, setLogLevel } from 'firebase/firestore';
 
 
 // --- API Configuration ---
-// Read securely from Vercel Environment Variables
-const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-const apiKey = env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
+// Read securely from Vercel Environment Variables. We will access environment variables directly.
+const apiKey = process.env.VITE_VAIDYA_MITHRA_GEMINI_KEY || "";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
 // --- Structured JSON Schema for Disease Prediction ---
@@ -306,8 +305,9 @@ const HospitalPage = () => {
         const lon = position.coords.longitude;
         setStatus('found');
 
-        // Construct Google Maps URL for nearby hospitals
-        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=hospitals+near+${lat},${lon}`;
+        // MODIFIED: Switched to the cleaner search/center syntax for better mobile compatibility
+        // This searches for "Emergency Room" while setting the map center to the user's location (14z = zoom level)
+        const mapsUrl = `https://www.google.com/maps/search/Emergency+Room/@${lat},${lon},14z`;
         
         // Redirect user to Google Maps in a new tab
         window.open(mapsUrl, '_blank');
@@ -372,7 +372,7 @@ const HospitalPage = () => {
 /**
  * PAGE 3: DocBot Chat Page (Modified to fill viewport)
  */
-const DocBotPage = ({ db, userId, auth, authReady, appId }) => { // <-- Added appId prop
+const DocBotPage = ({ db, userId, auth, authReady }) => {
   const CHAT_BOT_SYSTEM_INSTRUCTION = "You are a friendly, non-diagnostic AI assistant named DocBot. Your role is to answer general health questions, provide basic medical information, explain symptoms, and offer clear advice on when to see a doctor. Never provide a formal diagnosis, treatment, or specific medication advice. Keep responses encouraging and concise. Only provide one possible condition and safe general advice. Use Google Search grounding when necessary.";
 
   const [chatHistory, setChatHistory] = useState([]);
@@ -394,12 +394,10 @@ const DocBotPage = ({ db, userId, auth, authReady, appId }) => { // <-- Added ap
 
   // Firestore Listener
   useEffect(() => {
-    // MODIFIED: Uses new appId prop and checks authReady
-    if (!authReady || !userId || !db || !appId) return;
+    if (!authReady || !userId || !db || !auth?.app?.options?.appId) return;
 
     try {
-      // MODIFIED: Uses appId prop to build path
-      const chatCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/docbot_chat`);
+      const chatCollectionRef = collection(db, `artifacts/${auth.app.options.appId}/users/${userId}/docbot_chat`);
       const q = query(chatCollectionRef, orderBy('timestamp', 'asc'), limit(50));
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -413,7 +411,7 @@ const DocBotPage = ({ db, userId, auth, authReady, appId }) => { // <-- Added ap
     } catch (e) {
       console.error("Firestore Chat Setup Failed:", e);
     }
-  }, [db, userId, authReady, appId]); // <-- Added appId dependency
+  }, [db, userId, authReady, auth]);
 
   // Exponential Backoff Fetch Utility
   const fetchWithBackoff = useCallback(async (url, options, retries = 3, delay = 1000) => {
@@ -439,14 +437,12 @@ const DocBotPage = ({ db, userId, auth, authReady, appId }) => { // <-- Added ap
 
   const handleSend = async (messageText) => {
     const message = (typeof messageText === 'string') ? messageText : currentMessage;
-    // MODIFIED: Uses new appId prop
-    if (!message.trim() || isTyping || !db || !userId || !appId) return;
+    if (!message.trim() || isTyping || !db || !userId || !auth?.app?.options?.appId) return;
 
     const userMessage = message.trim();
     setCurrentMessage('');
     
-    // MODIFIED: Uses appId prop to build path
-    const chatCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/docbot_chat`);
+    const chatCollectionRef = collection(db, `artifacts/${auth.app.options.appId}/users/${userId}/docbot_chat`);
     
     // 1. Save user message to Firestore
     const userDocRef = doc(chatCollectionRef);
@@ -663,7 +659,7 @@ const ContactPage = () => {
  * The symptom lists and history scroll INTERNALLY.
  * The main page only scrolls AFTER prediction.
  */
-const PredictionPage = ({ db, auth, userId, authReady, appId }) => { // <-- Added appId prop
+const PredictionPage = ({ db, auth, userId, authReady }) => {
   // Prediction States
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [age, setAge] = useState(30);
@@ -676,12 +672,10 @@ const PredictionPage = ({ db, auth, userId, authReady, appId }) => { // <-- Adde
 
   // --- HISTORY LISTENER ---
   useEffect(() => {
-    // MODIFIED: Uses new appId prop and checks authReady
-    if (!authReady || !userId || !db || !appId) return;
+    if (!db || !userId || !authReady || !auth?.app?.options?.appId) return;
 
     try {
-      // MODIFIED: Uses appId prop to build path
-      const historyCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/symptom_history`);
+      const historyCollectionRef = collection(db, `artifacts/${auth.app.options.appId}/users/${userId}/symptom_history`);
       const q = query(historyCollectionRef, orderBy('timestamp', 'desc'), limit(5));
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -694,7 +688,7 @@ const PredictionPage = ({ db, auth, userId, authReady, appId }) => { // <-- Adde
     } catch (e) {
       console.error("Firestore History Listener Failed:", e);
     }
-  }, [db, userId, authReady, appId]); // <-- Added appId dependency
+  }, [db, userId, authReady, auth]);
 
   // Exponential Backoff Fetch Utility
   const fetchWithBackoff = useCallback(async (url, options, retries = 3, delay = 1000) => {
@@ -762,10 +756,8 @@ const PredictionPage = ({ db, auth, userId, authReady, appId }) => { // <-- Adde
       setPredictionResult(parsedResult);
       
       // Save query to Firestore if initialized
-      // MODIFIED: Uses new appId prop
-      if (db && userId && appId) {
-        // MODIFIED: Uses appId prop to build path
-        const historyCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/symptom_history`);
+      if (db && userId && auth?.app?.options?.appId) {
+        const historyCollectionRef = collection(db, `artifacts/${auth.app.options.appId}/users/${userId}/symptom_history`);
         await setDoc(doc(historyCollectionRef), {
           symptoms: selectedSymptoms,
           age: age,
@@ -780,7 +772,7 @@ const PredictionPage = ({ db, auth, userId, authReady, appId }) => { // <-- Adde
     } finally {
       setIsLoading(false);
     }
-  }, [selectedSymptoms, age, gender, db, userId, appId, fetchWithBackoff]); // <-- Added appId dependency
+  }, [selectedSymptoms, age, gender, auth, db, userId, fetchWithBackoff]);
 
   // --- Symptom Management ---
   const toggleSymptom = (symptom) => {
@@ -1079,7 +1071,6 @@ const App = () => {
   const [auth, setAuth] = useState(null);
   const [userId, setUserId] = useState(null);
   const [authReady, setAuthReady] = useState(false);
-  const [appId, setAppId] = useState(null); // <-- NEW: State for appId
 
   // Page Navigation State
   const [currentPage, setCurrentPage] = useState('home'); // default page
@@ -1091,8 +1082,8 @@ const App = () => {
     try {
       // --- MODIFICATION FOR VERCEL ---
       // 1. Read the config from Vercel's Environment Variables
-      const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-      const firebaseConfigStr = env.VITE_FIREBASE_CONFIG || '{}';
+      // We will access environment variables directly via `process.env` (Node environment standard)
+      const firebaseConfigStr = process.env.VITE_FIREBASE_CONFIG || '{}';
       
       // 2. We are on a public website, so we MUST sign in anonymously.
       const initialAuthToken = null; 
@@ -1112,8 +1103,8 @@ const App = () => {
       }
       
       // --- CRITICAL FIX: Get appId from the config object ---
-      const newAppId = firebaseConfig.appId; 
-      if (!newAppId) {
+      const appId = firebaseConfig.appId; 
+      if (!appId) {
         console.error("Your firebaseConfig is missing the 'appId'!");
         return;
       }
@@ -1128,7 +1119,6 @@ const App = () => {
       if (isMounted) {
         setDb(firestore);
         setAuth(firebaseAuth);
-        setAppId(newAppId); // <-- NEW: Set appId state
       }
 
       const attemptAuth = async () => {
@@ -1184,10 +1174,10 @@ const App = () => {
       case 'prediction':
         // PredictionPage is the only one that scrolls
         // MODIFIED: Pass appId prop
-        return <div className={pageContainerClasses + " overflow-y-auto"}><PredictionPage db={db} auth={auth} userId={userId} authReady={authReady} appId={appId} /></div>;
+        return <div className={pageContainerClasses + " overflow-y-auto"}><PredictionPage db={db} auth={auth} userId={userId} authReady={authReady} /></div>;
       case 'docbot':
         // MODIFIED: Pass appId prop
-        return <div className={pageContainerClasses}><DocBotPage db={db} auth={auth} userId={userId} authReady={authReady} appId={appId} /></div>;
+        return <div className={pageContainerClasses}><DocBotPage db={db} auth={auth} userId={userId} authReady={authReady} /></div>;
       case 'hospitals':
         return <div className={pageContainerClasses}><HospitalPage /></div>;
       case 'contact':
