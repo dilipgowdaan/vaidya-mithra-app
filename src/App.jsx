@@ -612,10 +612,10 @@ const DocBotPage = ({ db, userId, auth, authReady, appId }) => { // <-- Added ap
  */
 const ContactPage = () => {
   const TEAM_CONTACTS = useMemo(() => [
-    { name: "Dr. Evelyn Reed", phone: "+1 555-1234", email: "e.reed@vaidyamithra.com" },
-    { name: "A.I. Developer Smith", phone: "+1 555-5678", email: "a.smith@vaidyamithra.com" },
-    { name: "Support Specialist J.", phone: "+1 555-9012", email: "support@vaidyamithra.com" },
-    { name: "Legal & Ethics Dept.", phone: "+1 555-3456", email: "legal@vaidyamithra.com" },
+    { name: "Divya M C", role: "Software Engineer", phone: "9606390229", email: "divyamc2006@gmail.com" },
+    { name: "Dilip Kumar A N",role: "Software Engineer", phone: "7259447817", email: "dilipgowda7259@gmail.com" },
+    { name: "Manu M C", role: "Software Engineer", phone: "8867499702", email: "manumcmanumc42@gmail.com" },
+    { name: "Hemanth Kumar K S",role: "Software Engineer",  phone: "8792564277", email: "hemanthgowdaks77@gmail.com" },
   ], []);
 
   return (
@@ -641,6 +641,11 @@ const ContactPage = () => {
               className="bg-gray-50/80 border border-gray-200/50 p-4 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.03] hover:border-blue-300"
             >
               <p className="font-bold text-lg text-blue-800 mb-2">{person.name}</p> {/* MODIFIED: text-xl to text-lg, mb-3 to mb-2 */ }
+              
+               <div className="flex items-center text-sm text-gray-700 mb-1"> {/* MODIFIED: text-md to text-sm, mb-2 to mb-1 */ }
+                <Icon name="phone" size={14} className="mr-2 text-gray-500" />
+                <a href={`tel:${person.role}`} className="hover:text-blue-600 transition">{person.role}</a>
+                 
               <div className="flex items-center text-sm text-gray-700 mb-1"> {/* MODIFIED: text-md to text-sm, mb-2 to mb-1 */ }
                 <Icon name="phone" size={14} className="mr-2 text-gray-500" />
                 <a href={`tel:${person.phone}`} className="hover:text-blue-600 transition">{person.phone}</a>
